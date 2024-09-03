@@ -8,12 +8,12 @@ program ejercicio8
 
     ! Lectura de archivo
     open(unit=2,file="matriz.txt")
-    read(2,'(2I2)', ADVANCE='NO') N,M
+    read(2,'(2I2)') N,M
     do i=1,N
-        read(2,*)
-        do j = 1, M
-            read(2,'(F4.1)', ADVANCE='NO') MATRIZ(i,j)
-        end do
+        !read(2,*)
+        !do j = 1, M
+            read(2,'(3F4.1)') (MATRIZ(i,j),j=1,M)
+        !end do
     end do
     close(2)
 
