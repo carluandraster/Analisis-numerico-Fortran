@@ -35,15 +35,23 @@ program ejercicio2
         v_prima(1) = -20*v(1)+7*exp(-0.5*v(0))
     end function v_prima
 
+    function solucionExacta(v)
+        real(8),dimension(0:1) :: v
+        real(8) :: solucionExacta
+        solucionExacta = 5*exp(-20*v(0))+7*(exp(-0.5*v(0))-exp(-20*v(0)))/19.5
+    end function solucionExacta
+
     subroutine EulerSimple(vi,maxNum,h,unidad)
         real(8),dimension(0:1), intent(in) :: vi
         real(8),dimension(0:1) :: v
         integer, intent(in) :: unidad
         real(8), intent(in) :: h,maxNum
+        real(8) :: solExacta
         
         v = vi
         do while (v(0)<=maxNum)
-            write(unidad,'(3F10.6)') v,5*exp(-20*v(0))+7*(exp(-0.5*v(0))-exp(-20*v(0)))/19.5
+            solExacta = solucionExacta(v)
+            write(unidad,'(4F10.6)') v,solExacta,abs(solExacta-v(1))
             v = v + h*v_prima(v)
         end do
         
