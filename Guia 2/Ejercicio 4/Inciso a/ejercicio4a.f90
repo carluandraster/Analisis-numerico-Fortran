@@ -19,6 +19,12 @@ program ejercicio4a
         v_prima(1) = (v(1)**2+v(1))/v(0)
     end function v_prima
 
+    function solucionExacta(v)
+        real(8), dimension(0:1) :: v
+        real(8) :: solucionExacta
+        solucionExacta = 2*v(0)/(1-2*v(0))
+    end function solucionExacta
+
     SUBROUTINE EulerModificado(vi, max, h)
         !Metodo de Euler Modificado
         REAL(8), INTENT(IN), DIMENSION(0:1) :: vi
@@ -27,7 +33,7 @@ program ejercicio4a
         open(unit=1,file="datos.dat")
         v = vi
         DO while (v(0)<=max)
-            WRITE (1, '(2F10.6)') v
+            WRITE (1, '(3F10.6)') v,solucionExacta(v)
             vp = v_prima(v)
             v = v + h*(vp + v_prima(v + h*vp))/2.0
         END DO
