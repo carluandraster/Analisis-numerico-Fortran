@@ -3,12 +3,13 @@ program ejercicio9
     REAL(8),DIMENSION(0:1) :: vi
     REAL(8) :: h,res
     ! y(0) = 40
-    vi(0) = 0
-    vi(1) = 40
+    vi(0) = 0.0
+    vi(1) = 40.0
     h=0.5
     res=4
     
-    write(*,'(82A,F10.6,9A)') "Tiempo en que tardara la concentracion en llegar a un decimo de su valor inicial: ",RungeKuttaFehlberg(vi,res,h)," minutos."
+    write(*,'(A,F10.1,A)') "Tiempo en que tardara la concentracion en llegar a un decimo de su valor inicial: ", &
+                            RungeKuttaFehlberg(vi, res, h), " minutos."
 
     contains
 
