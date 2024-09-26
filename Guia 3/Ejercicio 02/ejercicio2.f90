@@ -1,109 +1,111 @@
 program ejercicio2
     implicit none
-    INTEGER,PARAMETER :: MAXELEM = 20
-    REAL(8),DIMENSION(MAXELEM,MAXELEM) :: A,L,U
-    REAL(8),DIMENSION(MAXELEM,1) ::  B,C,X
+    INTEGER, PARAMETER :: MAXELEM = 20
+    REAL(8), DIMENSION(MAXELEM, MAXELEM) :: A, L, U
+    REAL(8), DIMENSION(MAXELEM, 1) :: B, C, X
     INTEGER :: N
 
-    call leerArchivo(1,"incisoA.txt",A,B,N)
-    call crout(A,L,U,N)
-    call primeraSolucion(B,L,C,N)
-    call solucionFinal(U,X,C,N)
-    call mostrarSolucion(X,N)
+    ! Inciso a
+    print*,"Solucion inciso a"
+    call leerArchivo(1, "incisoA.txt", A, B, N)
+    call crout(A, L, U, N)
+    call primeraSolucion(B, L, C, N)
+    call solucionFinal(U, X, C, N)
+    call mostrarSolucion(X, N)
 
-    contains
+    ! Inciso b
+    print*,"Solucion inciso b"
+    call leerArchivo(2, "incisoB.txt", A, B, N)
+    call crout(A, L, U, N)
+    call primeraSolucion(B, L, C, N)
+    call solucionFinal(U, X, C, N)
+    call mostrarSolucion(X, N)
 
-    subroutine leerArchivo(unidad,  archivo, matriz, term_indep,N)
-        INTEGER :: unidad,N,i,j
+contains
+
+    subroutine leerArchivo(unidad, archivo, matriz, term_indep, N)
+        INTEGER :: unidad, N, i, j
         CHARACTER(LEN=11) :: archivo
-        REAL(8),DIMENSION(MAXELEM,MAXELEM) :: matriz
-        REAL(8),DIMENSION(MAXELEM,1) :: term_indep
-        open(unit=unidad,file=archivo)
-        read(unidad,'(I1)') N
+        REAL(8), DIMENSION(MAXELEM, MAXELEM) :: matriz
+        REAL(8), DIMENSION(MAXELEM, 1) :: term_indep
+        open(unit=unidad, file=archivo)
+        read(unidad, '(I1)') N
         do i = 1, N
             do j = 1, N
-                read(unidad,'(F8.4)',advance='NO') matriz(i,j)
+                read(unidad, '(F8.4)', advance='NO') matriz(i,j)
             end do
-            read(unidad,'(F8.4)') term_indep(i,1)
+            read(unidad, '(F8.4)') term_indep(i, 1)
         end do
         close(unidad)
     end subroutine leerArchivo
 
-    subroutine crout(A,L,U,N)
-        REAL(8),DIMENSION(MAXELEM,MAXELEM) ::  A,L,U,VC
-        INTEGER fila, col, i, k,N
-        VC = A
-        do i = 1, N
-            do k = i+1, n
-                L(i,k) = 0
-                U(k,i) = 0
+    subroutine crout(A, L, U, N)
+        REAL(8), DIMENSION(MAXELEM, MAXELEM) :: A, L, U
+        INTEGER :: i, j, k, N
+
+        ! Inicialización de L y U
+        L = 0.0
+        U = 0.0
+
+        ! Factorización de Crout
+        do j = 1, N
+            ! Calculo de la matriz L
+            do i = j, N
+                L(i,j) = A(i,j)
+                do k = 1, j-1
+                    L(i,j) = L(i,j) - L(i,k) * U(k,j)
+                end do
+            end do
+
+            ! Calculo de la matriz U
+            U(j,j) = 1.0  ! Diagonal de U debe ser 1
+            do i = j+1, N
+                U(j,i) = A(j,i)
+                do k = 1, j-1
+                    U(j,i) = U(j,i) - L(j,k) * U(k,i)
+                end do
+                U(j,i) = U(j,i) / L(j,j)
             end do
         end do
-        do i = 1, n
-            A(1,i) = A(1,i)/A(1,1)
-            U(i,i) = 1
-            L(i,1) = A(i,1)
-        end do
-        DO i=2, N
-            ! Calcula la columna i
-            DO fila=i, N
-                DO k=1,i-1
-                    A(fila,i)=A(fila,i) - A(fila,k)*A(k,i)
-                END DO
-            END DO
-            ! Calcula fila i
-            DO col=i+1, N
-                DO k=1,i-1
-                    A(i, col)=A(i,col) - A(i,k)*A(k,col)
-                END DO
-                A(i,col) = A(i,col) / A(i,i)
-            END DO
-        END DO
-        do i = 1, N
-            do k = 1, N
-                if ( k<=i ) then
-                    L(i,k) = A(i,k)
-                else
-                    U(i,k) = A(i,k)
-                end if
-            end do
-        end do
-        A = VC
     end subroutine crout
 
-    subroutine primeraSolucion(B,L,C,N)
+    subroutine primeraSolucion(B, L, C, N)
         REAL(8) :: sumatoria
-        REAL(8),DIMENSION(MAXELEM,1) :: B,C
-        REAL(8),DIMENSION(MAXELEM,MAXELEM) :: L
-        INTEGER :: i,j,N
+        REAL(8), DIMENSION(MAXELEM, 1) :: B, C
+        REAL(8), DIMENSION(MAXELEM, MAXELEM) :: L
+        INTEGER :: i, j, N
+
+        ! Solución de L * C = B
         do i = 1, N
-            sumatoria = 0
+            sumatoria = 0.0
             do j = 1, i-1
-                sumatoria = sumatoria + L(i,j)*c(j,1)
+                sumatoria = sumatoria + L(i,j) * C(j,1)
             end do
-            C(i,1) = (B(i,1)-sumatoria)/L(i,i)
+            C(i,1) = (B(i,1) - sumatoria) / L(i,i)
         end do
     end subroutine primeraSolucion
 
-    subroutine solucionFinal(U,X,C,N)
+    subroutine solucionFinal(U, X, C, N)
         REAL(8) :: sumatoria
-        REAL(8),DIMENSION(MAXELEM,1) :: X,C
-        REAL(8),DIMENSION(MAXELEM,MAXELEM) :: U
-        INTEGER :: i,j,N
-        do i = N, 1,-1
-            sumatoria = 0
+        REAL(8), DIMENSION(MAXELEM, 1) :: X, C
+        REAL(8), DIMENSION(MAXELEM, MAXELEM) :: U
+        INTEGER :: i, j, N
+
+        ! Solución de U * X = C
+        do i = N, 1, -1
+            sumatoria = 0.0
             do j = i+1, N
-                sumatoria = sumatoria+U(i,j)*X(j,1)
+                sumatoria = sumatoria + U(i,j) * X(j,1)
             end do
-            X(i,1) = C(i,1)-sumatoria
+            X(i,1) = (C(i,1) - sumatoria) / U(i,i)
         end do
     end subroutine solucionFinal
 
-    subroutine mostrarSolucion(X,N)
-        INTEGER :: N,i
-        REAL(8),DIMENSION(MAXELEM,1) :: X
+    subroutine mostrarSolucion(X, N)
+        INTEGER :: N, i
+        REAL(8), DIMENSION(MAXELEM, 1) :: X
         do i = 1, N
-            write(*,'(A,I1,A,F10.6)') "x",i," = ",X(i,1)
+            write(*,'(A,I1,A,F10.6)') "x", i, " = ", X(i,1)
         end do
     end subroutine mostrarSolucion
 end program ejercicio2
