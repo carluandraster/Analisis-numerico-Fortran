@@ -8,6 +8,21 @@ program ejercicio6b
     N = INT((xFinal-xInicial)/deltaX)
     ALLOCATE(v(N))
 
+    ! t = 0
+    call MetodoExplicito(0d0,0d0,v,N)
+    call cargarArchivo(v,N)
+    call system("gnuplot -persist scripts/script0.p")
+
+    ! t = 1
+    call MetodoExplicito(0d0,1d0,v,N)
+    call cargarArchivo(v,N)
+    call system("gnuplot -persist scripts/script1.p")
+
+    ! t = 2
+    call MetodoExplicito(1d0,2d0,v,N)
+    call cargarArchivo(v,N)
+    call system("gnuplot -persist scripts/script2.p")
+
     DEALLOCATE(v)
 
     contains
@@ -28,7 +43,7 @@ program ejercicio6b
     subroutine MetodoExplicito(tInicial,tFinal,v,N)
         REAL(8) :: tFinal,tInicial,t
         INTEGER :: i,N
-        REAL(8),DIMENSION(0:N) :: v
+        REAL(8),DIMENSION(0:N) :: v,vc
         
         if ( tFinal == 0 ) then
             do i = 0, N
@@ -37,9 +52,26 @@ program ejercicio6b
         else
             t = tInicial
             do while (t<= tFinal)
-                call promedio(v,v,N)
+                vc = v
+                call promedio(vc,v,N)
                 t =  t+deltaT
             end do
         end if
     end subroutine MetodoExplicito
+
+    subroutine cargarArchivo(v,N)
+        INTEGER :: i,N
+        REAL(8),DIMENSION(0:N) :: v
+        REAL(8) :: x
+    
+        open(unit = 1, file = "dat/datos.dat")
+        x = xInicial
+        i = 0
+        do while (x < xFinal)
+            write(1,'(2F10.6)') x,v(i)
+            x = x + deltaX
+            i = i+1
+        end do
+        close(1)
+    end subroutine cargarArchivo
 end program ejercicio6b
