@@ -2,11 +2,10 @@ program ejercicio7a
     implicit none
     REAL(8),PARAMETER :: pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679
     REAL(8),PARAMETER :: xInicial = 0,xFinal = 1, dx = 0.001, dt = 0.000001
-    REAL(8),DIMENSION(:,:),ALLOCATABLE :: u
-    INTEGER :: N
-
-    N = INT((xFinal-xInicial)/dx)
-    ALLOCATE(u(N,1))
+    REAL(8),DIMENSION(:),ALLOCATABLE :: u
+    INTEGER,PARAMETER :: N= INT((xFinal-xInicial)/dx+1)
+    
+    ALLOCATE(u(0:N))
 
     ! t = 0
     call Crank_Nicolson(0d0,0d0,u)
@@ -30,12 +29,11 @@ program ejercicio7a
     SUBROUTINE Thomas(u_orig, d_orig, l_orig, b)
         ! Metodo de Thomas para matrices Tri-Diagonales
         REAL(8), INTENT(IN) :: u_orig, d_orig, l_orig
-        REAL(8), DIMENSION(:,:) :: b
+        REAL(8), DIMENSION(:) :: b
         REAL(8), DIMENSION(:), ALLOCATABLE :: u, d, l
-        INTEGER orden, cant_vec, i
+        INTEGER orden, i
         
         orden = SIZE(b, DIM=1)
-        cant_vec = SIZE(b, DIM=2)
         ! Realiza copias del original
         ALLOCATE(u(orden), d(orden), l(orden))
 
@@ -48,16 +46,16 @@ program ejercicio7a
         ! Aqui comienza el algoritmo
         DO i=1, orden-1
             u(i) = u(i) / d(i)
-            b(i,:) = b(i,:) / d(i)
+            b(i) = b(i) / d(i)
             d(i) = 1.0
             d(i+1) = d(i+1) - l(i+1)*u(i)
-            b(i+1,:) = b(i+1,:) - l(i+1)*b(i,:)
+            b(i+1) = b(i+1) - l(i+1)*b(i)
             l(i+1) = 0.0
         ENDDO
         ! Obtencion de la solucion por Sustitucion Inversa
-        b(orden,:) = b(orden,:)/d(orden)
+        b(orden) = b(orden)/d(orden)
         DO i=orden-1, 1, -1
-            b(i,:) = b(i,:) - u(i)*b(i+1,:) / d(i)
+            b(i) = b(i) - u(i)*b(i+1) / d(i)
         END DO
    
         DEALLOCATE(u, d, l)
@@ -65,7 +63,8 @@ program ejercicio7a
 
     subroutine Crank_Nicolson(tInicial,tFinal,u)
         REAL(8),INTENT(IN) :: tInicial,tFinal
-        REAL(8),DIMENSION(:,:) :: u
+        REAL(8),DIMENSION(0:N) :: u
+        REAL(8),DIMENSION(1:N-1) :: termIndep
         REAL(8) :: x,t
         INTEGER :: i
         
@@ -73,16 +72,19 @@ program ejercicio7a
             x = xInicial
             i = 0
             do while (x<xFinal)
-                u(i,1) = sin(PI*x)
+                u(i) = sin(PI*x)
                 x = x + dx
                 i = i + 1
             end do
         else
             t = tInicial
             do while (t<tFinal)
-                call Thomas(-1d0,4d0,-1d0,u)
+                do i = 1, N-1
+                    termIndep(i) = u(i-1)+u(i+1)
+                end do
+                call Thomas(-1d0,4d0,-1d0,termIndep)
                 t = t + dt
-                
+                u(1:N-1) = termIndep
             end do
         end if
         
