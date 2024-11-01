@@ -1,22 +1,31 @@
 program ejercicio9
     implicit none
-    REAL(8),PARAMETER :: D = 0.5, dx = 0.02, dt = 0.001, r = D*dt/dx**2,xInicial = 0, xFinal = 20, tInicial = 0, tFinal = 100
+    REAL(8),PARAMETER :: D = 0.5, dx = 0.1, dt = 0.1, r = D*dt/dx**2,xInicial = 0, xFinal = 20, tInicial = 0, tFinal = 1000
     REAL(8),DIMENSION(:),ALLOCATABLE :: u
-    INTEGER :: i
     INTEGER,PARAMETER :: N = INT((xFinal-xInicial)/dx)
 
-    ALLOCATE(u(N))
-    do i = 0, INT((tFinal-tInicial)/dt)
-        if ( i == 0 ) then
-            call Crank_Nicolson(tInicial,dt*i,u)
-        else
-            call Crank_Nicolson((i-1)*dt,i*dt,u)
-        end if
-        if ( mod(i,INT(10/dt)) == 0 ) then
+
+    REAL(8) :: t
+
+    ALLOCATE(u(0:N))
+    t = 0 
+    ! Condiciones iniciales
+    u(:) = 0.02
+    u(0) = 2
+    u(N) = 0
+    do while (t<=tFinal+dt)
+
+        if ( mod(t,10d0) < dt ) then
             call cargarArchivo(u,N)
-            call escribirScript(i*dt)
+            call escribirScript(t)
             call system("gnuplot -persist script.p")
         end if
+        t = t+dt
+        !write(*,'(f7.2)') u
+        !read(*,*)
+        !write(*,*) '**********************************************************'
+
+        call Crank_Nicolson(t-dt,t,u)
     end do
     DEALLOCATE(u)
 
@@ -74,42 +83,24 @@ program ejercicio9
         DEALLOCATE(u, d, l)
     END SUBROUTINE
 
-    subroutine Crank_Nicolson(tInicial,tFinal,u)
-        REAL(8),INTENT(IN) :: tInicial,tFinal
+    subroutine Crank_Nicolson(t0,tF,u)
+        REAL(8),INTENT(IN) :: t0,tF
         REAL(8),DIMENSION(0:N) :: u
         REAL(8),DIMENSION(1:N-1) :: termIndep
-        REAL(8) :: x,t
+        REAL(8) :: t
         INTEGER :: i
-        
-        if ( tFinal == 0 ) then
-            x = xInicial
-            i = 0
-            do while (x<xFinal)
-                if ( i == 0 ) then
-                    u(i) = 10 ! Condicion de borde
-                else
-                    if ( i == N ) then
-                        u(i) = 0 !Condicion de borde
-                    else
-                        u(i) = 0.02 ! Condiciones iniciales
-                    end if
-                end if
-                
-                x = x + dx
-                i = i + 1
+        t = t0
+        do while (t<tF)
+   
+            do i = 1, N-1
+                termIndep(i) = r*u(i-1)+(2-2*r)*u(i)+r*u(i+1)
             end do
-        else
-            t = tInicial
-            do while (t<tFinal)
-                do i = 1, N-1
-                    termIndep(i) = r*u(i-1)+(2-2*r)*u(i)+r*u(i+1)
-                end do
-                call Thomas(-r,2+2*r,-r,termIndep)
-                t = t + dt
-                u(1:N-1) = termIndep
-            end do
-        end if
-        
+            call Thomas(-r,2+2*r,-r,termIndep)
+            t = t + dt
+            !write(*,*)termIndep
+            !read(*,*)
+            u(1:N-1) = termIndep
+        end do   
     end subroutine Crank_Nicolson
 
     subroutine cargarArchivo(v,N)
