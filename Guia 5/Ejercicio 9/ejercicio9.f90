@@ -1,32 +1,27 @@
 program ejercicio9
     implicit none
-    REAL(8),PARAMETER :: D = 0.5, dx = 0.1, dt = 0.1, r = D*dt/dx**2,xInicial = 0, xFinal = 20, tInicial = 0, tFinal = 1000
+    REAL(8),PARAMETER :: D = 0.5, dx = 4, dt = 32, r = 1,xInicial = 0, xFinal = 20, tInicial = 0, tFinal = 1000
     REAL(8),DIMENSION(:),ALLOCATABLE :: u
     INTEGER,PARAMETER :: N = INT((xFinal-xInicial)/dx)
-
 
     REAL(8) :: t
 
     ALLOCATE(u(0:N))
     t = 0 
     ! Condiciones iniciales
-    u(:) = 0.02
+    u = 0.02
     u(0) = 2
     u(N) = 0
-    do while (t<=tFinal+dt)
-
+    !do while (t<=tFinal+dt)
         if ( mod(t,10d0) < dt ) then
-            call cargarArchivo(u,N)
+            call cargarArchivo(u)
             call escribirScript(t)
             call system("gnuplot -persist script.p")
         end if
         t = t+dt
-        !write(*,'(f7.2)') u
-        !read(*,*)
-        !write(*,*) '**********************************************************'
-
-        call Crank_Nicolson(t-dt,t,u)
-    end do
+        call Crank_Nicolson(u)
+        write(*,*) u
+    !end do
     DEALLOCATE(u)
 
     contains
@@ -48,70 +43,69 @@ program ejercicio9
         close(1)
     end subroutine escribirScript
 
-    SUBROUTINE Thomas(u_orig, d_orig, l_orig, b)
-        ! Metodo de Thomas para matrices Tri-Diagonales
-        REAL(8), INTENT(IN) :: u_orig, d_orig, l_orig
-        REAL(8), DIMENSION(:) :: b
-        REAL(8), DIMENSION(:), ALLOCATABLE :: u, d, l
-        INTEGER orden, i
-        
-        orden = SIZE(b, DIM=1)
-        ! Realiza copias del original
-        ALLOCATE(u(orden), d(orden), l(orden))
+    subroutine solve_tridiag(a,b,c,d,x,n)
+        implicit none
+  !	a - sub-diagonal (means it is the diagonal below the main diagonal)
+  !	b - the main diagonal
+  !	c - sup-diagonal (means it is the diagonal above the main diagonal)
+  !	d - right part
+  !	x - the answer
+  !	n - number of equations
+  
+          integer,intent(in) :: n
+          real(8),dimension(n),intent(in) :: a,b,c,d
+          real(8),dimension(n),intent(out) :: x
+          real(8),dimension(n) :: cp,dp
+          real(8) :: m
+          integer i
+  
+  ! initialize c-prime and d-prime
+          cp(1) = c(1)/b(1)
+          dp(1) = d(1)/b(1)
+  ! solve for vectors c-prime and d-prime
+           do i = 2,n
+             m = b(i)-cp(i-1)*a(i-1)
+             cp(i) = c(i)/m
+             dp(i) = (d(i)-dp(i-1)*a(i-1))/m
+           enddo
+  ! initialize x
+           x(n) = dp(n)
+  ! solve for x from the vectors c-prime and d-prime
+          do i = n-1, 1, -1
+            x(i) = dp(i)-cp(i)*x(i+1)
+          end do
+  
+      end subroutine solve_tridiag
 
-        u(:) = u_orig
-        u(orden) = 0
-        d(:) = d_orig
-        l(:) = l_orig
-        l(1) = 0
-
-        ! Aqui comienza el algoritmo
-        DO i=1, orden-1
-            u(i) = u(i) / d(i)
-            b(i) = b(i) / d(i)
-            d(i) = 1.0
-            d(i+1) = d(i+1) - l(i+1)*u(i)
-            b(i+1) = b(i+1) - l(i+1)*b(i)
-            l(i+1) = 0.0
-        ENDDO
-        ! Obtencion de la solucion por Sustitucion Inversa
-        b(orden) = b(orden)/d(orden)
-        DO i=orden-1, 1, -1
-            b(i) = b(i) - u(i)*b(i+1) / d(i)
-        END DO
-   
-        DEALLOCATE(u, d, l)
-    END SUBROUTINE
-
-    subroutine Crank_Nicolson(t0,tF,u)
-        REAL(8),INTENT(IN) :: t0,tF
+    subroutine Crank_Nicolson(u)
         REAL(8),DIMENSION(0:N) :: u
-        REAL(8),DIMENSION(1:N-1) :: termIndep
-        REAL(8) :: t
+        REAL(8),DIMENSION(1:N-1) :: a,b,c,termIndep,x
         INTEGER :: i
-        t = t0
-        do while (t<tF)
-   
-            do i = 1, N-1
-                termIndep(i) = r*u(i-1)+(2-2*r)*u(i)+r*u(i+1)
-            end do
-            call Thomas(-r,2+2*r,-r,termIndep)
-            t = t + dt
-            !write(*,*)termIndep
-            !read(*,*)
-            u(1:N-1) = termIndep
-        end do   
+        termIndep(1) = 2*r*u(0)+(2-2*r)*u(1)+r*u(2)
+        do i = 2, N-2
+            termIndep(i) = r*u(i-1)+(2-2*r)*u(i)+r*u(i+1)
+        end do
+        termIndep(N-1) = r*u(N-2)+(2-2*r)*u(N-1)+2*r*u(N)
+        a(1) = 0
+        a(2:N-1) = -r
+        b(:) = 2+2*r
+        c(1:n-2) = -r
+        c(n-1) = 0
+        call solve_tridiag(a,b,c,termIndep,x,N-1)
+        do i = 1, N-1
+            u(i) = x(i)
+        end do
     end subroutine Crank_Nicolson
 
-    subroutine cargarArchivo(v,N)
-        INTEGER :: i,N
+    subroutine cargarArchivo(v)
+        INTEGER :: i
         REAL(8),DIMENSION(0:N) :: v
         REAL(8) :: x
     
         open(unit = 1, file = "datos.dat")
         x = xInicial
         i = 0
-        do while (x <= xFinal)
+        do while (x <= xFinal+dx)
             write(1,'(2F15.6)') x,v(i)
             x = x + dx
             i = i+1
