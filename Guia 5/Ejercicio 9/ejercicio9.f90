@@ -1,27 +1,27 @@
 program ejercicio9
     implicit none
-    REAL(8),PARAMETER :: D = 0.5, dx = 4, dt = 32, r = 1,xInicial = 0, xFinal = 20, tInicial = 0, tFinal = 1000
+    REAL(8),PARAMETER :: D = 0.017, dx = 0.1, dt = 0.1, r = D*dt/dx**2,xInicial = 0, xFinal = 20, tInicial = 0, tFinal = 10
     REAL(8),DIMENSION(:),ALLOCATABLE :: u
     INTEGER,PARAMETER :: N = INT((xFinal-xInicial)/dx)
+
 
     REAL(8) :: t
 
     ALLOCATE(u(0:N))
     t = 0 
     ! Condiciones iniciales
-    u = 0.02
+    u(:) = 0.02
     u(0) = 2
     u(N) = 0
-    !do while (t<=tFinal+dt)
-        if ( mod(t,10d0) < dt ) then
+    do while (t<=tFinal+dt)
+        if ( mod(t,1d0) < dt ) then
             call cargarArchivo(u)
             call escribirScript(t)
             call system("gnuplot -persist script.p")
         end if
         t = t+dt
         call Crank_Nicolson(u)
-        write(*,*) u
-    !end do
+    end do
     DEALLOCATE(u)
 
     contains
@@ -45,12 +45,12 @@ program ejercicio9
 
     subroutine solve_tridiag(a,b,c,d,x,n)
         implicit none
-  !	a - sub-diagonal (means it is the diagonal below the main diagonal)
-  !	b - the main diagonal
-  !	c - sup-diagonal (means it is the diagonal above the main diagonal)
-  !	d - right part
-  !	x - the answer
-  !	n - number of equations
+        !	a - sub-diagonal (la que esta por debajo de la diagonal principal)
+        !	b - la diagonal principal
+        !	c - sup-diagonal (la que esta por encima de la diagonal principal)
+        !	d - termino independiente
+        !	x - la solucion
+        !	n - cantidad de ecuaciones
   
           integer,intent(in) :: n
           real(8),dimension(n),intent(in) :: a,b,c,d
@@ -59,18 +59,18 @@ program ejercicio9
           real(8) :: m
           integer i
   
-  ! initialize c-prime and d-prime
+        ! Inicializar c' and d'
           cp(1) = c(1)/b(1)
           dp(1) = d(1)/b(1)
-  ! solve for vectors c-prime and d-prime
+        ! solve for vectors c-prime and d-prime
            do i = 2,n
-             m = b(i)-cp(i-1)*a(i-1)
+            m = b(i)-cp(i-1)*a(i)
              cp(i) = c(i)/m
-             dp(i) = (d(i)-dp(i-1)*a(i-1))/m
+             dp(i) = (d(i)-dp(i-1)*a(i))/m
            enddo
-  ! initialize x
+        ! initialize x
            x(n) = dp(n)
-  ! solve for x from the vectors c-prime and d-prime
+        ! solve for x from the vectors c-prime and d-prime
           do i = n-1, 1, -1
             x(i) = dp(i)-cp(i)*x(i+1)
           end do
@@ -91,7 +91,7 @@ program ejercicio9
         b(:) = 2+2*r
         c(1:n-2) = -r
         c(n-1) = 0
-        call solve_tridiag(a,b,c,termIndep,x,N-1)
+        call solve_tridiag(a,b,c,termIndep,x,n-1)
         do i = 1, N-1
             u(i) = x(i)
         end do
